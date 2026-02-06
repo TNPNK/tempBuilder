@@ -1,0 +1,56 @@
+---
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <style>
+      :root {
+        --topbar-height: 64px;
+        --platinum: #e2e8f0;
+        --yellow: #facc15;
+        --pitch-black: #0f172a;
+        --grey: #475569;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, sans-serif;
+        color: var(--pitch-black);
+      }
+
+      .topbar {
+        height: var(--topbar-height);
+        background: white;
+        border-bottom: 1px solid var(--platinum);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+      }
+
+      .brand {
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">Exam Template Builder</div>
+      <small>Build exam cover pages quickly</small>
+    </header>
+    <slot />
+  </body>
+</html>
