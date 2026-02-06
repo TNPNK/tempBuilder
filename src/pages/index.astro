@@ -21,10 +21,7 @@ if (supabase) {
 <DashboardLayout title="Exam Template Builder">
   <div class="builder-container">
     <aside class="controls">
-      <div class="panel-header">
-        <h2>Template Settings</h2>
-        <p class="panel-subtitle">Build exam cover pages with a few clicks.</p>
-      </div>
+      <h2>Template Settings</h2>
 
       <div class="control-group">
         <label for="templateName">Template Name</label>
@@ -44,16 +41,6 @@ if (supabase) {
 
       <div class="actions">
         <button id="saveBtn" class="save-btn" onclick="saveTemplate()">Save Template</button>
-        <p class="helper-text">Saved templates appear below.</p>
-      </div>
-
-      <div class="tips-card">
-        <h3>Quick Tips</h3>
-        <ul>
-          <li>Drag blocks inside the preview to reorder.</li>
-          <li>Click text to edit it inline.</li>
-          <li>Use L/C/R to align each block.</li>
-        </ul>
       </div>
 
       <div class="saved-templates">
@@ -73,10 +60,6 @@ if (supabase) {
     </aside>
 
     <main class="canvas">
-      <div class="preview-header">
-        <h3>Live Preview</h3>
-        <span>Printable A4 layout</span>
-      </div>
       <div id="preview" class="paper-page"></div>
     </main>
   </div>
@@ -116,7 +99,7 @@ if (supabase) {
   }
 
   .block-btn {
-    background: #f8fafc;
+    background: #f8f9fa;
     border: 1px solid var(--platinum);
     padding: 12px;
     text-align: left;
@@ -135,19 +118,8 @@ if (supabase) {
     padding: 40px;
     overflow-y: auto;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
+    justify-content: center;
     background: #525659;
-  }
-
-  .preview-header {
-    width: min(210mm, 100%);
-    color: #f8fafc;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
   }
 
   .paper-page {
@@ -282,12 +254,11 @@ if (supabase) {
   }
 
   :global(.align-btn) {
-    padding: 3px 7px;
-    font-size: 11px;
+    padding: 2px 6px;
+    font-size: 10px;
     background: white;
-    border: 1px solid #cbd5f5;
+    border: 1px solid #ccc;
     cursor: pointer;
-    border-radius: 3px;
   }
 
   :global(.align-btn.active) {
@@ -303,43 +274,6 @@ if (supabase) {
     border: none;
     font-weight: bold;
     cursor: pointer;
-    border-radius: 6px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .save-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
-  }
-
-  .panel-header {
-    margin-bottom: 1.5rem;
-  }
-
-  .panel-subtitle {
-    margin: 0.4rem 0 0;
-    color: var(--grey);
-    font-size: 0.9rem;
-  }
-
-  .helper-text {
-    color: var(--grey);
-    font-size: 0.85rem;
-    margin: 0.4rem 0 0;
-  }
-
-  .tips-card {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    border-radius: 8px;
-    background: #f8fafc;
-    border: 1px solid var(--platinum);
-  }
-
-  .tips-card ul {
-    padding-left: 18px;
-    margin: 0.6rem 0 0;
-    color: var(--grey);
   }
 
   .metadata-grid-container {
@@ -435,12 +369,12 @@ if (supabase) {
 
       let html = `<div class="block-controls">
         <div class="alignment-controls">
-          <button type="button" class="align-btn ${block.align === 'left' ? 'active' : ''}" onclick="event.stopPropagation(); updateAlignment(${index}, 'left')">L</button>
-          <button type="button" class="align-btn ${block.align === 'center' ? 'active' : ''}" onclick="event.stopPropagation(); updateAlignment(${index}, 'center')">C</button>
-          <button type="button" class="align-btn ${block.align === 'right' ? 'active' : ''}" onclick="event.stopPropagation(); updateAlignment(${index}, 'right')">R</button>
+          <button class="align-btn ${block.align === 'left' ? 'active' : ''}" onclick="updateAlignment(${index}, 'left')">L</button>
+          <button class="align-btn ${block.align === 'center' ? 'active' : ''}" onclick="updateAlignment(${index}, 'center')">C</button>
+          <button class="align-btn ${block.align === 'right' ? 'active' : ''}" onclick="updateAlignment(${index}, 'right')">R</button>
         </div>
         <span class="drag-handle">⠿</span>
-        <button type="button" onclick="event.stopPropagation(); removeBlock(${index})">Delete</button>
+        <button onclick="removeBlock(${index})">Delete</button>
       </div>`;
 
       switch (block.type) {
