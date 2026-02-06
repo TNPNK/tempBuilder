@@ -21,10 +21,7 @@ if (supabase) {
 <DashboardLayout title="Exam Template Builder">
   <div class="builder-container">
     <aside class="controls">
-      <div class="panel-header">
-        <h2>Template Settings</h2>
-        <p class="panel-subtitle">Build exam cover pages with a few clicks.</p>
-      </div>
+      <h2>Template Settings</h2>
 
       <div class="control-group">
         <label for="templateName">Template Name</label>
@@ -42,33 +39,8 @@ if (supabase) {
         </div>
       </div>
 
-      <div class="control-group">
-        <label>Institution Logo</label>
-        <p class="helper-text">Use a local image or paste a logo URL.</p>
-        <div class="logo-controls">
-          <input type="file" id="logoFileInput" accept="image/*" />
-          <input type="text" id="logoUrlInput" placeholder="https://example.com/logo.png" />
-          <div class="logo-btn-row">
-            <button type="button" class="block-btn" onclick="applyLogoFromFile()">Use Local Image</button>
-            <button type="button" class="block-btn" onclick="applyLogoFromUrl()">Use Logo URL</button>
-          </div>
-          <button type="button" class="clear-btn" onclick="clearLogo()">Remove Logo</button>
-        </div>
-      </div>
-
       <div class="actions">
         <button id="saveBtn" class="save-btn" onclick="saveTemplate()">Save Template</button>
-        <button type="button" class="preview-btn" onclick="openPrintPreview()">Preview Print Layout</button>
-        <p class="helper-text">Saved templates appear below.</p>
-      </div>
-
-      <div class="tips-card">
-        <h3>Quick Tips</h3>
-        <ul>
-          <li>Drag blocks inside the preview to reorder.</li>
-          <li>Click text to edit it inline.</li>
-          <li>Use L/C/R to align each block.</li>
-        </ul>
       </div>
 
       <div class="saved-templates">
@@ -88,10 +60,6 @@ if (supabase) {
     </aside>
 
     <main class="canvas">
-      <div class="preview-header">
-        <h3>Live Preview</h3>
-        <span>Printable A4 layout</span>
-      </div>
       <div id="preview" class="paper-page"></div>
     </main>
   </div>
@@ -131,7 +99,7 @@ if (supabase) {
   }
 
   .block-btn {
-    background: #f8fafc;
+    background: #f8f9fa;
     border: 1px solid var(--platinum);
     padding: 12px;
     text-align: left;
@@ -150,19 +118,8 @@ if (supabase) {
     padding: 40px;
     overflow-y: auto;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
+    justify-content: center;
     background: #525659;
-  }
-
-  .preview-header {
-    width: min(210mm, 100%);
-    color: #f8fafc;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
   }
 
   .paper-page {
@@ -174,6 +131,25 @@ if (supabase) {
     display: flex;
     flex-direction: column;
     gap: 20px;
+  }
+
+  .block-edit-overlay {
+    margin-top: 10px;
+    padding: 5px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    display: none;
+  }
+
+  .canvas-block:hover .block-edit-overlay {
+    display: block;
+  }
+
+  .block-edit-overlay input {
+    width: 100%;
+    font-size: 12px;
+    padding: 4px;
+    border: 1px solid #ccc;
   }
 
   .drag-handle {
@@ -278,12 +254,11 @@ if (supabase) {
   }
 
   :global(.align-btn) {
-    padding: 3px 7px;
-    font-size: 11px;
+    padding: 2px 6px;
+    font-size: 10px;
     background: white;
-    border: 1px solid #cbd5f5;
+    border: 1px solid #ccc;
     cursor: pointer;
-    border-radius: 3px;
   }
 
   :global(.align-btn.active) {
@@ -299,79 +274,6 @@ if (supabase) {
     border: none;
     font-weight: bold;
     cursor: pointer;
-    border-radius: 6px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .preview-btn {
-    width: 100%;
-    margin-top: 10px;
-    padding: 10px 12px;
-    background: #ffffff;
-    color: var(--pitch-black);
-    border: 1px solid var(--pitch-black);
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .logo-controls {
-    margin-top: 10px;
-    display: grid;
-    gap: 10px;
-  }
-
-  .logo-controls input[type="file"],
-  .logo-controls input[type="text"] {
-    width: 100%;
-  }
-
-  .logo-btn-row {
-    display: grid;
-    gap: 8px;
-  }
-
-  .clear-btn {
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    border-radius: 6px;
-    padding: 8px 10px;
-    cursor: pointer;
-  }
-
-  .save-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
-  }
-
-  .panel-header {
-    margin-bottom: 1.5rem;
-  }
-
-  .panel-subtitle {
-    margin: 0.4rem 0 0;
-    color: var(--grey);
-    font-size: 0.9rem;
-  }
-
-  .helper-text {
-    color: var(--grey);
-    font-size: 0.85rem;
-    margin: 0.4rem 0 0;
-  }
-
-  .tips-card {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    border-radius: 8px;
-    background: #f8fafc;
-    border: 1px solid var(--platinum);
-  }
-
-  .tips-card ul {
-    padding-left: 18px;
-    margin: 0.6rem 0 0;
-    color: var(--grey);
   }
 
   .metadata-grid-container {
@@ -434,6 +336,7 @@ if (supabase) {
     .remove-field-btn,
     .add-field-btn,
     .block-controls,
+    .block-edit-overlay,
     .controls,
     .topbar {
       display: none !important;
@@ -442,7 +345,6 @@ if (supabase) {
 </style>
 
 <script is:inline>
-  let currentLogoUrl = '';
   let templateBlocks = [
     { id: '1', type: 'header', content: 'INSTITUTION NAME HERE', logoUrl: '', align: 'center' },
     { id: '2', type: 'metadata', fields: ['Course Level', 'Module Name', 'Exam Series'], align: 'left' }
@@ -467,12 +369,12 @@ if (supabase) {
 
       let html = `<div class="block-controls">
         <div class="alignment-controls">
-          <button type="button" class="align-btn ${block.align === 'left' ? 'active' : ''}" onclick="event.stopPropagation(); updateAlignment(${index}, 'left')">L</button>
-          <button type="button" class="align-btn ${block.align === 'center' ? 'active' : ''}" onclick="event.stopPropagation(); updateAlignment(${index}, 'center')">C</button>
-          <button type="button" class="align-btn ${block.align === 'right' ? 'active' : ''}" onclick="event.stopPropagation(); updateAlignment(${index}, 'right')">R</button>
+          <button class="align-btn ${block.align === 'left' ? 'active' : ''}" onclick="updateAlignment(${index}, 'left')">L</button>
+          <button class="align-btn ${block.align === 'center' ? 'active' : ''}" onclick="updateAlignment(${index}, 'center')">C</button>
+          <button class="align-btn ${block.align === 'right' ? 'active' : ''}" onclick="updateAlignment(${index}, 'right')">R</button>
         </div>
         <span class="drag-handle">⠿</span>
-        <button type="button" onclick="event.stopPropagation(); removeBlock(${index})">Delete</button>
+        <button onclick="removeBlock(${index})">Delete</button>
       </div>`;
 
       switch (block.type) {
@@ -480,6 +382,14 @@ if (supabase) {
           html += `<div class="exam-header ${block.logoUrl ? 'has-logo' : ''}">
             ${block.logoUrl ? `<img src="${block.logoUrl}" class="preview-logo" />` : ''}
             <h1 contenteditable="true" onblur="updateBlockContent(${index}, 'content', this.innerText)">${block.content}</h1>
+            <div class="block-edit-overlay">
+              <input
+                type="text"
+                placeholder="Paste Logo URL (png/jpg)"
+                value="${block.logoUrl || ''}"
+                onchange="updateBlockContent(${index}, 'logoUrl', this.value)"
+              />
+            </div>
           </div>`;
           break;
 
@@ -533,103 +443,11 @@ if (supabase) {
       type,
       content: type === 'header' ? 'INSTITUTION NAME' : '',
       fields: type === 'metadata' ? ['Course Level', 'Module Name', 'Time Allowed'] : [],
-      logoUrl: type === 'header' ? currentLogoUrl : '',
+      logoUrl: '',
       align: 'center'
     };
     templateBlocks.push(newBlock);
     updatePreview();
-  };
-
-  const applyLogoToHeaderBlocks = (logoValue) => {
-    templateBlocks = templateBlocks.map((block) =>
-      block.type === 'header' ? { ...block, logoUrl: logoValue } : block,
-    );
-    updatePreview();
-  };
-
-  window.applyLogoFromFile = () => {
-    const fileInput = document.getElementById('logoFileInput');
-    const file = fileInput?.files?.[0];
-
-    if (!file) {
-      alert('Select an image file first.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== 'string') {
-        alert('Unable to load image preview from this file.');
-        return;
-      }
-      currentLogoUrl = reader.result;
-      applyLogoToHeaderBlocks(currentLogoUrl);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  window.applyLogoFromUrl = () => {
-    const logoInput = document.getElementById('logoUrlInput');
-    const value = logoInput?.value?.trim();
-    if (!value) {
-      alert('Paste a logo URL first.');
-      return;
-    }
-    currentLogoUrl = value;
-    applyLogoToHeaderBlocks(currentLogoUrl);
-  };
-
-  window.clearLogo = () => {
-    currentLogoUrl = '';
-    const logoInput = document.getElementById('logoUrlInput');
-    const fileInput = document.getElementById('logoFileInput');
-    if (logoInput) logoInput.value = '';
-    if (fileInput) fileInput.value = '';
-    applyLogoToHeaderBlocks('');
-  };
-
-  window.openPrintPreview = () => {
-    const preview = document.getElementById('preview');
-    if (!preview) return;
-
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=900');
-    if (!printWindow) {
-      alert('Unable to open print preview window. Please allow popups for this site.');
-      return;
-    }
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print Preview</title>
-          <style>
-            body { margin: 0; background: #d1d5db; font-family: Arial, sans-serif; }
-            .page {
-              background: white;
-              width: 210mm;
-              min-height: 297mm;
-              padding: 20mm;
-              margin: 20px auto;
-              box-shadow: 0 0 6px rgba(0,0,0,0.2);
-              box-sizing: border-box;
-            }
-            .exam-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
-            .preview-logo { max-height: 80px; max-width: 150px; object-fit: contain; margin-bottom: 15px; }
-            .metadata-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #000; padding: 10px; }
-            .candidate-box { border: 1px solid #000; padding: 15px; margin-top: 10px; }
-            .line-input { border-bottom: 1px solid #000; display: inline-block; width: 60%; margin-left: 10px; height: 15px; }
-            @media print {
-              body { background: #fff; }
-              .page { box-shadow: none; margin: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="page">${preview.innerHTML}</div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
   };
 
   window.removeBlock = (index) => {
