@@ -1,0 +1,735 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { getSupabaseClient } from '../lib/supabase';
+
+const supabase = getSupabaseClient();
+
+let templates: { id: string; name: string }[] = [];
+
+if (supabase) {
+  const { data } = await supabase
+    .from('document_templates')
+    .select('id, name')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  templates = data ?? [];
+}
+---
+
+<DashboardLayout title="Exam Template Builder">
+  <div class="builder-container">
+    <aside class="controls">
+      <div class="panel-header">
+        <h2>Template Settings</h2>
+        <p class="panel-subtitle">Build exam cover pages with a few clicks.</p>
+      </div>
+
+      <div class="control-group">
+        <label for="templateName">Template Name</label>
+        <input type="text" id="templateName" placeholder="e.g., Standard Exam Layout" />
+      </div>
+
+      <div class="control-group">
+        <label>Exam Components</label>
+        <p class="helper-text">Click to add to paper</p>
+        <div class="component-library">
+          <button type="button" class="block-btn" onclick="addBlock('header')">+ Header Section</button>
+          <button type="button" class="block-btn" onclick="addBlock('metadata')">+ Exam Info Grid</button>
+          <button type="button" class="block-btn" onclick="addBlock('candidate')">+ Candidate Info</button>
+          <button type="button" class="block-btn" onclick="addBlock('instructions')">+ Instructions Block</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Institution Logo</label>
+        <p class="helper-text">Use a local image or paste a logo URL.</p>
+        <div class="logo-controls">
+          <input type="file" id="logoFileInput" accept="image/*" />
+          <input type="text" id="logoUrlInput" placeholder="https://example.com/logo.png" />
+          <div class="logo-btn-row">
+            <button type="button" class="block-btn" onclick="applyLogoFromFile()">Use Local Image</button>
+            <button type="button" class="block-btn" onclick="applyLogoFromUrl()">Use Logo URL</button>
+          </div>
+          <button type="button" class="clear-btn" onclick="clearLogo()">Remove Logo</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="saveBtn" class="save-btn" onclick="saveTemplate()">Save Template</button>
+        <button type="button" class="preview-btn" onclick="openPrintPreview()">Preview Print Layout</button>
+        <p class="helper-text">Saved templates appear below.</p>
+      </div>
+
+      <div class="tips-card">
+        <h3>Quick Tips</h3>
+        <ul>
+          <li>Drag blocks inside the preview to reorder.</li>
+          <li>Click text to edit it inline.</li>
+          <li>Use L/C/R to align each block.</li>
+        </ul>
+      </div>
+
+      <div class="saved-templates">
+        <h3>Recent Templates</h3>
+        {
+          templates.length > 0 ? (
+            <ul>
+              {templates.map((template) => (
+                <li>{template.name}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>No templates found yet.</p>
+          )
+        }
+      </div>
+    </aside>
+
+    <main class="canvas">
+      <div class="preview-header">
+        <h3>Live Preview</h3>
+        <span>Printable A4 layout</span>
+      </div>
+      <div id="preview" class="paper-page"></div>
+    </main>
+  </div>
+</DashboardLayout>
+
+<style is:global>
+  .builder-container {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: calc(100vh - var(--topbar-height));
+    background: var(--platinum);
+  }
+
+  .controls {
+    background: white;
+    padding: 2rem;
+    border-right: 1px solid var(--platinum);
+    overflow-y: auto;
+  }
+
+  .control-group { margin-bottom: 1.5rem; }
+
+  .saved-templates h3 {
+    margin-bottom: 8px;
+  }
+
+  .saved-templates ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  .component-library {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .block-btn {
+    background: #f8fafc;
+    border: 1px solid var(--platinum);
+    padding: 12px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .block-btn:hover {
+    background: var(--yellow);
+    border-color: var(--pitch-black);
+  }
+
+  .canvas {
+    padding: 40px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    background: #525659;
+  }
+
+  .preview-header {
+    width: min(210mm, 100%);
+    color: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+  }
+
+  .paper-page {
+    background: white;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 20mm;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .drag-handle {
+    cursor: grab;
+    padding: 0 5px;
+    color: var(--grey);
+    font-size: 18px;
+    user-select: none;
+  }
+
+  :global(.preview-logo) {
+    max-height: 80px;
+    max-width: 150px;
+    object-fit: contain;
+    margin-bottom: 15px;
+    display: block;
+  }
+
+  :global(.exam-header.has-logo) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  :global(.canvas-block) {
+    position: relative;
+    border: 1px solid transparent;
+    padding: 10px;
+    cursor: grab;
+    transition: transform 0.2s, background-color 0.2s;
+  }
+
+  :global(.canvas-block:hover) {
+    border: 1px dashed var(--yellow);
+  }
+
+  :global(.block-controls) {
+    position: absolute;
+    top: -10px;
+    right: 0;
+    display: none;
+    gap: 5px;
+  }
+
+  :global(.canvas-block:hover .block-controls) {
+    display: flex;
+  }
+
+  :global(.canvas-block.dragging) {
+    opacity: 0.5;
+    background-color: #f0f7ff;
+    cursor: grabbing;
+    border: 2px dashed var(--yellow);
+  }
+
+  :global(.canvas-block.drag-over) {
+    border-top: 4px solid var(--yellow);
+  }
+
+  :global(.exam-header) {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+  }
+
+  :global(.metadata-grid) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    border: 1px solid #000;
+    padding: 10px;
+  }
+
+  :global(.candidate-box) {
+    border: 1px solid #000;
+    padding: 15px;
+    margin-top: 10px;
+  }
+
+  :global(.line-input) {
+    border-bottom: 1px solid #000;
+    display: inline-block;
+    width: 60%;
+    margin-left: 10px;
+    height: 15px;
+  }
+
+  :global(.text-left) { text-align: left; align-items: flex-start; }
+  :global(.text-center) { text-align: center; align-items: center; }
+  :global(.text-right) { text-align: right; align-items: flex-end; }
+
+  :global(.alignment-controls) {
+    display: flex;
+    gap: 2px;
+    background: #eee;
+    padding: 2px;
+    border-radius: 4px;
+    margin-right: 10px;
+  }
+
+  :global(.align-btn) {
+    padding: 3px 7px;
+    font-size: 11px;
+    background: white;
+    border: 1px solid #cbd5f5;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+
+  :global(.align-btn.active) {
+    background: var(--yellow);
+    border-color: var(--pitch-black);
+  }
+
+  .save-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--pitch-black);
+    color: white;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .preview-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #ffffff;
+    color: var(--pitch-black);
+    border: 1px solid var(--pitch-black);
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .logo-controls {
+    margin-top: 10px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .logo-controls input[type="file"],
+  .logo-controls input[type="text"] {
+    width: 100%;
+  }
+
+  .logo-btn-row {
+    display: grid;
+    gap: 8px;
+  }
+
+  .clear-btn {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    border-radius: 6px;
+    padding: 8px 10px;
+    cursor: pointer;
+  }
+
+  .save-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+  }
+
+  .panel-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .panel-subtitle {
+    margin: 0.4rem 0 0;
+    color: var(--grey);
+    font-size: 0.9rem;
+  }
+
+  .helper-text {
+    color: var(--grey);
+    font-size: 0.85rem;
+    margin: 0.4rem 0 0;
+  }
+
+  .tips-card {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid var(--platinum);
+  }
+
+  .tips-card ul {
+    padding-left: 18px;
+    margin: 0.6rem 0 0;
+    color: var(--grey);
+  }
+
+  .metadata-grid-container {
+    position: relative;
+    border: 1px solid #000;
+    padding: 15px;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .meta-label-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 150px;
+  }
+
+  .remove-field-btn,
+  .add-field-btn {
+    background: var(--platinum);
+    border: 1px solid #ccc;
+    cursor: pointer;
+    font-size: 10px;
+    border-radius: 3px;
+    display: none;
+  }
+
+  .add-field-btn {
+    margin-top: 10px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .canvas-block:hover .remove-field-btn,
+  .canvas-block:hover .add-field-btn {
+    display: inline-block;
+  }
+
+  @media (max-width: 1024px) {
+    .builder-container {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+
+    .canvas {
+      padding: 15px;
+    }
+
+    .paper-page {
+      width: 100%;
+      min-height: auto;
+    }
+  }
+
+  @media print {
+    .remove-field-btn,
+    .add-field-btn,
+    .block-controls,
+    .controls,
+    .topbar {
+      display: none !important;
+    }
+  }
+</style>
+
+<script is:inline>
+  let currentLogoUrl = '';
+  let templateBlocks = [
+    { id: '1', type: 'header', content: 'INSTITUTION NAME HERE', logoUrl: '', align: 'center' },
+    { id: '2', type: 'metadata', fields: ['Course Level', 'Module Name', 'Exam Series'], align: 'left' }
+  ];
+
+  window.updatePreview = () => {
+    const preview = document.getElementById('preview');
+    if (!preview) return;
+    preview.innerHTML = '';
+
+    templateBlocks.forEach((block, index) => {
+      const div = document.createElement('div');
+      div.className = `canvas-block text-${block.align || 'center'}`;
+      div.setAttribute('draggable', 'true');
+      div.dataset.index = index;
+
+      div.addEventListener('dragstart', handleDragStart);
+      div.addEventListener('dragover', handleDragOver);
+      div.addEventListener('dragleave', handleDragLeave);
+      div.addEventListener('drop', handleDrop);
+      div.addEventListener('dragend', handleDragEnd);
+
+      let html = `<div class="block-controls">
+        <div class="alignment-controls">
+          <button type="button" class="align-btn ${block.align === 'left' ? 'active' : ''}" onclick="event.stopPropagation(); updateAlignment(${index}, 'left')">L</button>
+          <button type="button" class="align-btn ${block.align === 'center' ? 'active' : ''}" onclick="event.stopPropagation(); updateAlignment(${index}, 'center')">C</button>
+          <button type="button" class="align-btn ${block.align === 'right' ? 'active' : ''}" onclick="event.stopPropagation(); updateAlignment(${index}, 'right')">R</button>
+        </div>
+        <span class="drag-handle">⠿</span>
+        <button type="button" onclick="event.stopPropagation(); removeBlock(${index})">Delete</button>
+      </div>`;
+
+      switch (block.type) {
+        case 'header':
+          html += `<div class="exam-header ${block.logoUrl ? 'has-logo' : ''}">
+            ${block.logoUrl ? `<img src="${block.logoUrl}" class="preview-logo" />` : ''}
+            <h1 contenteditable="true" onblur="updateBlockContent(${index}, 'content', this.innerText)">${block.content}</h1>
+          </div>`;
+          break;
+
+        case 'metadata':
+          html += `<div class="metadata-grid-container">
+            <div class="metadata-grid">
+              ${block.fields
+                .map(
+                  (f, fIndex) => `<div class="meta-item">
+                    <div class="meta-label-wrapper">
+                      <button class="remove-field-btn" onclick="removeMetadataField(${index}, ${fIndex})">×</button>
+                      <span contenteditable="true" onblur="updateMetadataField(${index}, ${fIndex}, this.innerText)">${f.toUpperCase()}</span>:
+                    </div>
+                    <span class="line-input"></span>
+                  </div>`,
+                )
+                .join('')}
+            </div>
+            <div class="grid-actions">
+              <button class="add-field-btn" onclick="addMetadataField(${index})">+ Add Row</button>
+            </div>
+          </div>`;
+          break;
+
+        case 'candidate':
+          html += `<div class="candidate-box">
+            <div style="margin-bottom:10px">NAME: <span class="line-input"></span></div>
+            <div>INDEX NO: <span class="line-input"></span></div>
+          </div>`;
+          break;
+
+        case 'instructions':
+          html += `<div class="instructions">
+            <strong>INSTRUCTIONS TO CANDIDATES:</strong>
+            <ul contenteditable="true">
+              <li>Answer all questions in Section A.</li>
+              <li>Write your name on every page.</li>
+            </ul>
+          </div>`;
+          break;
+      }
+
+      div.innerHTML = html;
+      preview.appendChild(div);
+    });
+  };
+
+  window.addBlock = (type) => {
+    const newBlock = {
+      id: Date.now().toString(),
+      type,
+      content: type === 'header' ? 'INSTITUTION NAME' : '',
+      fields: type === 'metadata' ? ['Course Level', 'Module Name', 'Time Allowed'] : [],
+      logoUrl: type === 'header' ? currentLogoUrl : '',
+      align: 'center'
+    };
+    templateBlocks.push(newBlock);
+    updatePreview();
+  };
+
+  const applyLogoToHeaderBlocks = (logoValue) => {
+    templateBlocks = templateBlocks.map((block) =>
+      block.type === 'header' ? { ...block, logoUrl: logoValue } : block,
+    );
+    updatePreview();
+  };
+
+  window.applyLogoFromFile = () => {
+    const fileInput = document.getElementById('logoFileInput');
+    const file = fileInput?.files?.[0];
+
+    if (!file) {
+      alert('Select an image file first.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        alert('Unable to load image preview from this file.');
+        return;
+      }
+      currentLogoUrl = reader.result;
+      applyLogoToHeaderBlocks(currentLogoUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  window.applyLogoFromUrl = () => {
+    const logoInput = document.getElementById('logoUrlInput');
+    const value = logoInput?.value?.trim();
+    if (!value) {
+      alert('Paste a logo URL first.');
+      return;
+    }
+    currentLogoUrl = value;
+    applyLogoToHeaderBlocks(currentLogoUrl);
+  };
+
+  window.clearLogo = () => {
+    currentLogoUrl = '';
+    const logoInput = document.getElementById('logoUrlInput');
+    const fileInput = document.getElementById('logoFileInput');
+    if (logoInput) logoInput.value = '';
+    if (fileInput) fileInput.value = '';
+    applyLogoToHeaderBlocks('');
+  };
+
+  window.openPrintPreview = () => {
+    const preview = document.getElementById('preview');
+    if (!preview) return;
+
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=900');
+    if (!printWindow) {
+      alert('Unable to open print preview window. Please allow popups for this site.');
+      return;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Preview</title>
+          <style>
+            body { margin: 0; background: #d1d5db; font-family: Arial, sans-serif; }
+            .page {
+              background: white;
+              width: 210mm;
+              min-height: 297mm;
+              padding: 20mm;
+              margin: 20px auto;
+              box-shadow: 0 0 6px rgba(0,0,0,0.2);
+              box-sizing: border-box;
+            }
+            .exam-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .preview-logo { max-height: 80px; max-width: 150px; object-fit: contain; margin-bottom: 15px; }
+            .metadata-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border: 1px solid #000; padding: 10px; }
+            .candidate-box { border: 1px solid #000; padding: 15px; margin-top: 10px; }
+            .line-input { border-bottom: 1px solid #000; display: inline-block; width: 60%; margin-left: 10px; height: 15px; }
+            @media print {
+              body { background: #fff; }
+              .page { box-shadow: none; margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="page">${preview.innerHTML}</div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  window.removeBlock = (index) => {
+    templateBlocks.splice(index, 1);
+    updatePreview();
+  };
+
+  window.updateBlockContent = (index, key, value) => {
+    templateBlocks[index][key] = value;
+    if (key === 'logoUrl') window.updatePreview();
+  };
+
+  window.updateAlignment = (index, alignValue) => {
+    templateBlocks[index].align = alignValue;
+    window.updatePreview();
+  };
+
+  window.saveTemplate = async () => {
+    const name = document.getElementById('templateName').value.trim();
+    if (!name) {
+      alert('Please name your template.');
+      return;
+    }
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    try {
+      const response = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, content_json: templateBlocks })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Unable to save template.');
+      }
+
+      alert('Template saved successfully!');
+      window.location.reload();
+    } catch (error) {
+      alert(error.message || 'An unexpected error occurred while saving.');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Template';
+    }
+  };
+
+  window.updateMetadataField = (blockIndex, fieldIndex, newValue) => {
+    templateBlocks[blockIndex].fields[fieldIndex] = newValue;
+  };
+
+  window.addMetadataField = (blockIndex) => {
+    templateBlocks[blockIndex].fields.push('NEW FIELD');
+    updatePreview();
+  };
+
+  window.removeMetadataField = (blockIndex, fieldIndex) => {
+    templateBlocks[blockIndex].fields.splice(fieldIndex, 1);
+    updatePreview();
+  };
+
+  let draggedItemIndex = null;
+
+  function handleDragStart(e) {
+    draggedItemIndex = Number.parseInt(this.dataset.index);
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    this.classList.add('drag-over');
+  }
+
+  function handleDragLeave() {
+    this.classList.remove('drag-over');
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+
+    const targetIndex = Number.parseInt(this.dataset.index);
+
+    if (draggedItemIndex !== targetIndex) {
+      const movedItem = templateBlocks.splice(draggedItemIndex, 1)[0];
+      templateBlocks.splice(targetIndex, 0, movedItem);
+      window.updatePreview();
+    }
+  }
+
+  function handleDragEnd() {
+    this.classList.remove('dragging');
+    const allBlocks = document.querySelectorAll('.canvas-block');
+    allBlocks.forEach((b) => b.classList.remove('drag-over'));
+  }
+
+  document.addEventListener('DOMContentLoaded', updatePreview);
+</script>
